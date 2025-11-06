@@ -28,24 +28,35 @@ sudo systemctl start docker
 sudo docker login
 
 # Создание проекта и Dockerfile
-FROM fedora:latest
+FROM python:3.11-alpine
 
-RUN dnf -y update && \
-    dnf -y install python3 python3-pip python3-devel gcc postgresql-devel && \
-    dnf clean all
+# Устанавливаем необходимые системные пакеты
+RUN apk add --no-cache bash dumb-init
 
+# Создаем пользователя
+RUN addgroup -S easycode && adduser -S easycode -G easycode
+
+# Рабочая директория
 WORKDIR /app
 
+# Копируем зависимости
 COPY requirements.txt .
 
-RUN pip3 install --upgrade pip && \
-    pip3 install -r requirements.txt
+# Устанавливаем Python зависимости глобально
+RUN pip install --no-cache-dir -r requirements.txt
 
+# Копируем проект
 COPY . .
 
-EXPOSE 8000
+# Меняем владельца на easycode
+RUN chown -R easycode:easycode /app
 
-CMD ["gunicorn", "easycode.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Используем пользователя easycode
+USER easycode
+
+# Команда запуска (предположим, у тебя gunicorn)
+CMD ["dumb-init", "gunicorn", "--bind", "0.0.0.0:8000", "myapp.wsgi:application"]
+
 
 
 mkdir -p ~/myapp/scripts
