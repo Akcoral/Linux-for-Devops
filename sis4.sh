@@ -28,6 +28,26 @@ sudo systemctl start docker
 sudo docker login
 
 # Создание проекта и Dockerfile
+FROM fedora:latest
+
+RUN dnf -y update && \
+    dnf -y install python3 python3-pip python3-devel gcc postgresql-devel && \
+    dnf clean all
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip3 install --upgrade pip && \
+    pip3 install -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["gunicorn", "easycode.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+
 mkdir -p ~/myapp/scripts
 cd ~/myapp
 
