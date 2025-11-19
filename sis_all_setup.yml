@@ -1,0 +1,333 @@
+---
+- name: SIS 2 — Roles, Users, SSH configuration
+  hosts: all
+  become: yes
+
+  vars:
+    sis2_groups:
+      - system_admin
+      - db_admin
+      - net_admin
+
+    sis2_users:
+      - { name: "sysadmin_user", group: "system_admin" }
+      - { name: "dbadmin_user", group: "db_admin" }
+      - { name: "netadmin_user", group: "net_admin" }
+      - { name: "automation_user", group: "" }
+
+    automation_ssh_pubkey: |
+       ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCmwaTkfMuxijBr8JfMSqwd1yKKUK/vOy0pHovejnlja2P8Oz/QEg2uQSIz9wPL+Jl9btdzA+hJm6dSTQNTxjAt7XvqVaWiY2O1D6VdUx0wXxk+LEh+QzGL8C1z5T0MOX2ZgSj0IZJz5Mbj4ec6GXIBiReuzvHaFW7ijA4k5BvXZ0jeOo3zMfGxFYELt6mT1FD//6xWTJObJvD9a40Ykhjnp0Wo1vH9StOlCl5jwTDRZBX51ESVNi5uVlR4rERkl3ZH0p3TmzHEtT/ZLzV/NcSZrcTf7AmA6kqK1q0mfnC6+N1Gzob68LE+SUJ5oOWu57C36lk43v2vbbzaEFBFvRB9O1X97lgyoyINbqNkxVH0OSoGVKoNMHGVCXw7QI+Y/hJienYRqfHUCQDaVIq3GMm0HiN3PvSK0Qa9tDiG4uaHkDP0wRaPktk+NfoxBoj0tvdgiEhWh44iJz8lzHpdmq3PISjM4ppOlQoXgIGzi4al7oKdDBIWl6SNY5/sMErXpvKl2604Zejeng+FKc8cIxptxYBnOzLleIHqr1b6cvsBayCND5Etk3/L6oDdr6YMyy1PFRjNOyE6BRAFAHh9RLnH5NZkWzwOOG1+U8xGvOK/7nnuMLX2D9VYRDnxEs6VtNnnat7haAxN2QMBArsq37FF9dGJGeEpLVwLNHzE/pw/cQ== automation_user@project
+
+  tasks:
+
+    - name: Create role groups
+      group:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ sis2_groups }}"
+
+    - name: Create users for each role
+      user:
+        name: "{{ item.name }}"
+        groups: "{{ item.group if item.group != '' else omit }}"
+        append: yes
+        shell: /bin/bash
+        state: present
+        create_home: yes
+      loop: "{{ sis2_users }}"
+
+    - name: Create sudoers file for role-based access
+      copy:
+        dest: "/etc/sudoers.d/role_rules"
+        mode: '0440'
+        content: |
+          %system_admin ALL=(ALL) ALL
+
+          %db_admin ALL=(ALL) NOPASSWD: /usr/bin/psql, \
+              /usr/bin/createdb, /usr/bin/dropdb
+
+          %net_admin ALL=(ALL) NOPASSWD: /usr/bin/firewall-cmd, \
+              /bin/systemctl restart sshd
+
+          automation_user ALL=(ALL) NOPASSWD: /bin/systemctl restart django, \
+              /usr/bin/git pull
+
+    - name: Install OpenSSH server
+      package:
+        name: openssh-server
+        state: present
+
+    - name: Enable and start SSHD service
+      systemd:
+        name: sshd
+        enabled: true
+        state: started
+
+    - name: Create .ssh directory
+      file:
+        path: /home/automation_user/.ssh
+        state: directory
+        owner: automation_user
+        group: automation_user
+        mode: '0700'
+
+    - name: Add public key
+      copy:
+        dest: /home/automation_user/.ssh/authorized_keys
+        owner: automation_user
+        group: automation_user
+        mode: '0600'
+        content: "{{ automation_ssh_pubkey }}"
+
+- name: SIS 3 — Install Packages and Configure Firewall
+  hosts: all
+  become: true
+
+  vars:
+    packages_dnf:
+      - python3
+      - python3-pip
+      - postgresql
+      - postgresql-server
+      - postgresql-contrib
+      - redis
+      - firewalld
+      - fail2ban
+      - wget
+      - curl
+      - git
+      - vim
+
+    packages_pip:
+      - django
+      - celery
+      - redis
+      - psycopg2-binary
+      - djangorestframework
+      - aiofiles
+      - anyio
+      - asgiref
+      - certifi
+      - charset-normalizer
+      - click
+      - colorama
+      - configobj
+      - configparser
+      - etelemetry
+      - filelock
+      - frontend
+      - h11
+      - httplib2
+      - idna
+      - importlib_resources
+      - isodate
+      - itsdangerous
+      - looseversion
+      - lxml
+      - networkx
+      - nibabel
+      - nipype
+      - numpy
+      - packaging
+      - pandas
+      - pathlib
+      - pillow
+      - prov
+      - puremagic
+      - pydot
+      - PyMuPDF
+      - pymupdf-fonts
+      - pyparsing
+      - python-dateutil
+      - pytz
+      - pyxnat
+      - uvicorn
+      - rdflib
+      - requests
+      - scipy
+      - simplejson
+      - six
+      - sniffio
+      - sqlparse
+      - starlette
+      - stripe
+      - tools
+      - traits
+      - typing_extensions
+      - tzdata
+      - urllib3
+
+  tasks:
+
+   # - name: Update all system packages
+   #   dnf:
+   #    name: "*"
+   #    state: latest
+
+    - name: Install required DNF packages
+      dnf:
+        name: "{{ packages_dnf }}"
+        state: present
+
+    - name: Install Python libraries via pip
+      pip:
+        name: "{{ packages_pip }}"
+        state: present
+
+    - name: Start and enable firewalld
+      systemd:
+        name: firewalld
+        state: started
+        enabled: true
+
+    - name: Open necessary ports
+      firewalld:
+        port: "{{ item }}/tcp"
+        permanent: true
+        state: enabled
+      loop:
+        - 22
+        - 80
+        - 5432
+        - 6379
+
+    - name: Reload firewalld
+      systemd:
+        name: firewalld
+        state: reloaded
+
+    - name: Ensure PostgreSQL is running
+      systemd:
+        name: postgresql
+        state: started
+        enabled: true
+
+    - name: Ensure Redis is running
+      systemd:
+        name: redis
+        state: started
+        enabled: true
+
+- name: SIS 4 — Docker, Systemd, Cron
+  hosts: all
+  become: true
+
+  vars:
+    docker_image_name: "akmarzhan14/easycode"
+    docker_image_tag: "latest"
+    app_dir: "/home/{{ ansible_user }}/easycode"
+    scripts_dir: "{{ app_dir }}/scripts"
+
+  tasks:
+
+    - name: Install dnf plugins
+      dnf:
+        name: dnf-plugins-core
+        state: present
+
+    - name: Add Docker CE repo
+      copy:
+        dest: /etc/yum.repos.d/docker-ce.repo
+        content: |
+          [docker-ce-stable]
+          name=Docker CE Stable - $basearch
+          baseurl=https://download.docker.com/linux/fedora/$releasever/$basearch/stable
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://download.docker.com/linux/fedora/gpg
+
+    - name: Install Docker CE and plugins
+      dnf:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+
+    - file:
+        path: "{{ scripts_dir }}"
+        state: directory
+        mode: '0755'
+
+    - copy:
+        dest: "{{ app_dir }}/Dockerfile"
+        content: |
+          FROM python:3.11-alpine
+          RUN apk add --no-cache bash dumb-init
+          RUN addgroup -S easycode && adduser -S easycode -G easycode
+          WORKDIR /app
+          COPY requirements.txt .
+          RUN pip install --no-cache-dir -r requirements.txt
+          COPY . .
+          RUN chown -R easycode:easycode /app
+          USER easycode
+          CMD ["dumb-init", "gunicorn", "--bind", "0.0.0.0:8000", "myapp.wsgi:application"]
+
+    - command: docker build -t {{ docker_image_name }}:{{ docker_image_tag }} {{ app_dir }}
+      args:
+        chdir: "{{ app_dir }}"
+
+    - copy:
+        dest: /etc/systemd/system/easycode.service
+        content: |
+          [Unit]
+          Description=Docker Container EasyCode
+          After=network-online.target docker.service
+          Requires=docker.service
+
+          [Service]
+          Restart=always
+          ExecStart=/usr/bin/docker run --name easycode -p 8080:80 {{ docker_image_name }}:{{ docker_image_tag }}
+          ExecStop=/usr/bin/docker stop easycode
+          ExecStopPost=/usr/bin/docker rm -f easycode
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - systemd:
+        daemon_reload: yes
+
+    - systemd:
+        name: easycode
+        enabled: true
+        state: started
+
+    - copy:
+        dest: "{{ scripts_dir }}/backup.sh"
+        content: |
+          #!/bin/bash
+          tar -czf ~/backup_$(date +%F_%H-%M-%S).tar.gz {{ app_dir }}
+          echo "Backup created at $(date)" >> {{ scripts_dir }}/backup.log
+        mode: '0755'
+
+    - copy:
+        dest: "{{ scripts_dir }}/logtime.sh"
+        content: |
+          #!/bin/bash
+          echo "Current time: $(date)" >> {{ scripts_dir }}/time.log
+        mode: '0755'
+
+    - cron:
+        name: "Daily backup script"
+        job: "{{ scripts_dir }}/backup.sh"
+        minute: "0"
+        hour: "0"
+        user: "{{ ansible_user }}"
+
+    - cron:
+        name: "Log current time every 5 minutes"
+        job: "{{ scripts_dir }}/logtime.sh"
+        minute: "*/5"
+        user: "{{ ansible_user }}"
