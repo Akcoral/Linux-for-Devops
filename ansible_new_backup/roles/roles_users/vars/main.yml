@@ -1,0 +1,14 @@
+sis2_groups:
+  - system_admin
+  - db_admin
+  - net_admin
+
+sis2_users:
+  - { name: "sysadmin_user", group: "system_admin" }
+  - { name: "dbadmin_user", group: "db_admin" }
+  - { name: "netadmin_user", group: "net_admin" }
+  - { name: "automation_user", group: "" }
+
+automation_ssh_pubkey: |
+   ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCmwaTkfMuxijBr8JfMSqwd1yKKUK/vOy0pHovejnlja2P8Oz/QEg2uQSIz9wPL+Jl9btdzA+hJm6dSTQNTxjAt7XvqVaWiY2O1D6VdUx0wXxk+LEh+QzGL8C1z5T0MOX2ZgSj0IZJz5Mbj4ec6GXIBiReuzvHaFW7ijA4k5BvXZ0jeOo3zMfGxFYELt6mT1FD//6xWTJObJvD9a40Ykhjnp0Wo1vH9StOlCl5jwTDRZBX51ESVNi5uVlR4rERkl3ZH0p3TmzHEtT/ZLzV/NcSZrcTf7AmA6kqK1q0mfnC6+N1Gzob68LE+SUJ5oOWu57C36lk43v2vbbzaEFBFvRB9O1X97lgyoyINbqNkxVH0OSoGVKoNMHGVCXw7QI+Y/hJienYRqfHUCQDaVIq3GMm0HiN3PvSK0Qa9tDiG4uaHkDP0wRaPktk+NfoxBoj0tvdgiEhWh44iJz8lzHpdmq3PISjM4ppOlQoXgIGzi4al7oKdDBIWl6SNY5/sMErXpvKl2604Zejeng+FKc8cIxptxYBnOzLleIHqr1b6cvsBayCND5Etk3/L6oDdr6YMyy1PFRjNOyE6BRAFAHh9RLnH5NZkWzwOOG1+U8xGvOK/7nnuMLX2D9VYRDnxEs6VtNnnat7haAxN2QMBArsq37FF9dGJGeEpLVwLNHzE/pw/cQ== automation_user@project
+

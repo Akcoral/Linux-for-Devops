@@ -1,0 +1,7 @@
+ansible_user: akmarzhannagashybay
+docker_image_name: "akmarzhan14/easycode"
+docker_image_tag: "latest"
+app_dir: "/home/akmarzhannagashybay/easycode"
+scripts_dir: "{{ app_dir }}/scripts"
+dockerhub_username: "akmarzhan14"
+dockerhub_password: "DOCKER_TOKEN_I_NEEd_WITHOUT_TOKEN_TO_GITHUB"

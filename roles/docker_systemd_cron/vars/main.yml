@@ -1,0 +1,5 @@
+docker_image_name: "akmarzhan14/easycode"
+docker_image_tag: "latest"
+ansible_user: akmarzhannagashybay
+app_dir: "/home/{{ ansible_user }}/easycode"
+scripts_dir: "{{ app_dir }}/scripts"

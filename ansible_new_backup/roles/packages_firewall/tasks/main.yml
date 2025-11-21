@@ -1,0 +1,44 @@
+---
+- name: Install required DNF packages
+  dnf:
+    name: "{{ packages_dnf }}"
+    state: present
+
+- name: Install Python libraries via pip
+  pip:
+    name: "{{ packages_pip }}"
+    state: present
+
+- name: Start and enable firewalld
+  systemd:
+    name: firewalld
+    state: started
+    enabled: true
+
+- name: Open necessary ports
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+  loop:
+    - 22
+    - 80
+    - 5432
+    - 6379
+
+- name: Reload firewalld
+  systemd:
+    name: firewalld
+    state: reloaded
+
+- name: Ensure PostgreSQL is running
+  systemd:
+    name: postgresql
+    state: started
+    enabled: true
+
+- name: Ensure Redis is running
+  systemd:
+    name: redis
+    state: started
+    enabled: true

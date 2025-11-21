@@ -1,0 +1,137 @@
+---
+- name: Install dnf plugins
+  dnf:
+    name: dnf-plugins-core
+    state: present
+
+- name: Add Docker CE repo
+  copy:
+    dest: /etc/yum.repos.d/docker-ce.repo
+    content: |
+      [docker-ce-stable]
+      name=Docker CE Stable - $basearch
+      baseurl=https://download.docker.com/linux/fedora/$releasever/$basearch/stable
+      enabled=1
+      gpgcheck=1
+      gpgkey=https://download.docker.com/linux/fedora/gpg
+
+- name: Install Docker CE and plugins
+  dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Enable and start Docker service
+  systemd:
+    name: docker
+    enabled: true
+    state: started
+
+- name: Create app directory
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create scripts directory
+  file:
+    path: "{{ scripts_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy Dockerfile
+  copy:
+    dest: "{{ app_dir }}/Dockerfile"
+    content: |
+      FROM python:3.11-alpine
+      RUN apk add --no-cache bash dumb-init
+      RUN addgroup -S easycode && adduser -S easycode -G easycode
+      WORKDIR /app
+      COPY requirements.txt .
+      RUN pip install --no-cache-dir -r requirements.txt
+      COPY . .
+      RUN chown -R easycode:easycode /app
+      USER easycode
+      ENV DJANGO_SETTINGS_MODULE=project.project.project.settings
+      CMD ["gunicorn", "--bind", "0.0.0.0:8000", "project.wsgi:application"]
+
+- name: Build Docker image
+  command: docker build -t akmarzhan14/easycode:latest {{ app_dir }}
+  args:
+    chdir: "{{ app_dir }}"
+
+- name: Log in to Docker Hub
+  community.docker.docker_login:
+    username: "{{ dockerhub_username }}"
+    password: "{{ dockerhub_password }}"
+
+- name: Push Docker image to Docker Hub
+  community.docker.docker_image:
+    name: "{{ docker_image_name }}"
+    tag: "{{ docker_image_tag }}"
+    push: yes
+    source: local
+
+- name: Create systemd service for EasyCode
+  copy:
+    dest: /etc/systemd/system/easycode.service
+    content: |
+      [Unit]
+      Description=Docker Container EasyCode
+      After=network-online.target docker.service
+      Requires=docker.service
+
+      [Service]
+      Restart=always
+      ExecStart=/usr/bin/docker run --name easycode -p 8080:8000 {{ docker_image_name }}:{{ docker_image_tag }}
+      ExecStop=/usr/bin/docker stop easycode
+      ExecStopPost=/usr/bin/docker rm -f easycode
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start EasyCode service
+  systemd:
+    name: easycode
+    enabled: true
+    state: started
+
+- name: Create backup.sh
+  copy:
+    dest: "{{ scripts_dir }}/backup.sh"
+    content: |
+      #!/bin/bash
+      tar -czf ~/backup_$(date +%F_%H-%M-%S).tar.gz {{ app_dir }}
+      echo "Backup created at $(date)" >> {{ scripts_dir }}/backup.log
+    mode: '0755'
+
+- name: Create logtime.sh
+  copy:
+    dest: "{{ scripts_dir }}/logtime.sh"
+    content: |
+      #!/bin/bash
+      echo "Current time: $(date)" >> {{ scripts_dir }}/time.log
+    mode: '0755'
+
+- name: Add cron job for daily backup
+  cron:
+    name: "Daily backup script"
+    job: "{{ scripts_dir }}/backup.sh"
+    minute: "0"
+    hour: "0"
+    user: "{{ ansible_user }}"
+
+- name: Add cron job for log time every 5 minutes
+  cron:
+    name: "Log current time every 5 minutes"
+    job: "{{ scripts_dir }}/logtime.sh"
+    minute: "*/5"
+    user: "{{ ansible_user }}"

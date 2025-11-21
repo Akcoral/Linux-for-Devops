@@ -1,0 +1,20 @@
+packages_dnf:
+  - python3
+  - python3-pip
+  - postgresql
+  - postgresql-server
+  - postgresql-contrib
+  - redis
+  - firewalld
+  - fail2ban
+  - wget
+  - curl
+  - git
+  - vim
+
+packages_pip:
+  - django
+  - celery
+  - redis
+  - psycopg2-binary
+  - djangorestframework

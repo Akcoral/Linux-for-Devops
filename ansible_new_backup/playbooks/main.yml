@@ -1,0 +1,12 @@
+---
+- name: Setup SIS 2–4
+  hosts: localhost
+  become: yes
+  vars:
+     project_path: /home/akmarzhannagashybay/easycode
+
+  roles:
+    - roles_users
+    - packages_firewall
+    - docker_systemd_cron
+      

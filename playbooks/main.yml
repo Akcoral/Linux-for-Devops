@@ -1,0 +1,17 @@
+- name: Configure SIS2 (Roles, Users, SSH)
+  hosts: all
+  become: true
+  roles:
+    - roles_users
+
+- name: Configure SIS3 (Packages, Firewall)
+  hosts: all
+  become: true
+  roles:
+    - packages_firewall
+
+- name: Configure SIS4 (Docker, Systemd, Cron)
+  hosts: all
+  become: true
+  roles:
+    - docker_systemd_cron

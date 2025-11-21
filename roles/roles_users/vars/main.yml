@@ -1,0 +1,13 @@
+sis2_groups:
+  - system_admin
+  - db_admin
+  - net_admin
+
+sis2_users:
+  - { name: "sysadmin_user", group: "system_admin" }
+  - { name: "dbadmin_user", group: "db_admin" }
+  - { name: "netadmin_user", group: "net_admin" }
+  - { name: "automation_user", group: "" }
+
+automation_ssh_pubkey: |
+   ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCm... automation_user@project

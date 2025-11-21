@@ -1,0 +1,55 @@
+- name: Create role groups
+  group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ sis2_groups }}"
+
+- name: Create users for each role
+  user:
+    name: "{{ item.name }}"
+    groups: "{{ item.group if item.group != '' else omit }}"
+    append: yes
+    shell: /bin/bash
+    state: present
+    create_home: yes
+  loop: "{{ sis2_users }}"
+
+- name: Create sudoers file for role-based access
+  copy:
+    dest: "/etc/sudoers.d/role_rules"
+    mode: '0440'
+    content: |
+      %system_admin ALL=(ALL) ALL
+
+      %db_admin ALL=(ALL) NOPASSWD: /usr/bin/psql, /usr/bin/createdb, /usr/bin/dropdb
+
+      %net_admin ALL=(ALL) NOPASSWD: /usr/bin/firewall-cmd, /bin/systemctl restart sshd
+
+      automation_user ALL=(ALL) NOPASSWD: /bin/systemctl restart django, /usr/bin/git pull
+
+- name: Install OpenSSH server
+  package:
+    name: openssh-server
+    state: present
+
+- name: Enable and start SSHD service
+  systemd:
+    name: sshd
+    enabled: true
+    state: started
+
+- name: Create .ssh directory
+  file:
+    path: /home/automation_user/.ssh
+    state: directory
+    owner: automation_user
+    group: automation_user
+    mode: '0700'
+
+- name: Add public key
+  copy:
+    dest: /home/automation_user/.ssh/authorized_keys
+    owner: automation_user
+    group: automation_user
+    mode: '0600'
+    content: "{{ automation_ssh_pubkey }}"
