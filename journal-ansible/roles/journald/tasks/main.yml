@@ -1,0 +1,26 @@
+---
+- name: Ensure systemd-journald is active
+  systemd:
+    name: systemd-journald
+    state: started
+    enabled: yes
+
+- name: Create persistent journal directory
+  file:
+    path: /var/log/journal
+    state: directory
+    owner: root
+    group: root
+    mode: '2755'
+
+- name: Configure journald
+  lineinfile:
+    path: /etc/systemd/journald.conf
+    regexp: '^#?Storage='
+    line: 'Storage=persistent'
+    state: present
+
+- name: Restart journald
+  systemd:
+    name: systemd-journald
+    state: restarted

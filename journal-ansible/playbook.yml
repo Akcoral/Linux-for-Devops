@@ -1,0 +1,10 @@
+---
+- name: Configure Linux journaling and auditing
+  hosts: localhost
+  become: yes
+
+  roles:
+    - journald
+    - rsyslog
+    - auditd
+    - scripts

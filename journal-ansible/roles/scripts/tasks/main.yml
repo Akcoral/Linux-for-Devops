@@ -1,0 +1,66 @@
+---
+- name: Create directory for journal tools
+  file:
+    path: "{{ ansible_env.HOME }}/journal-tools"
+    state: directory
+    mode: '755'
+
+- name: Create search_pattern.sh
+  copy:
+    dest: "{{ ansible_env.HOME }}/journal-tools/search_pattern.sh"
+    content: |
+      #!/bin/bash
+      if [ -z "$1" ]; then
+          echo "Usage: ./search_pattern.sh <pattern>"
+          exit 1
+      fi
+      echo "Searching for pattern: $1"
+      journalctl -r | grep -i "$1"
+    mode: '755'
+
+- name: Create services_logs.sh
+  copy:
+    dest: "{{ ansible_env.HOME }}/journal-tools/services_logs.sh"
+    content: |
+      #!/bin/bash
+      echo "Listing logs of all active services..."
+      for service in $(systemctl list-units --type=service --state=running --no-legend | awk '{print $1}'); do
+          echo -e "\n===== Logs for $service ====="
+          journalctl -u "$service" -n 20
+      done
+    mode: '755'
+
+- name: Create watch_errors.sh
+  copy:
+    dest: "{{ ansible_env.HOME }}/journal-tools/watch_errors.sh"
+    content: |
+      #!/bin/bash
+      echo "Watching for errors in journal logs (Ctrl+C to stop)..."
+      journalctl -f -p err
+    mode: '755'
+
+- name: Create logs_since.sh
+  copy:
+    dest: "{{ ansible_env.HOME }}/journal-tools/logs_since.sh"
+    content: |
+      #!/bin/bash
+      if [ -z "$1" ]; then
+          echo "Usage: ./logs_since.sh <minutes>"
+          exit 1
+      fi
+      echo "Showing logs from last $1 minutes..."
+      journalctl --since "$1 min ago"
+    mode: '755'
+
+- name: Create filter_priority.sh
+  copy:
+    dest: "{{ ansible_env.HOME }}/journal-tools/filter_priority.sh"
+    content: |
+      #!/bin/bash
+      if [ -z "$1" ]; then
+          echo "Usage: ./filter_priority.sh <priority>"
+          exit 1
+      fi
+      echo "Filtering logs by priority: $1"
+      journalctl -p "$1"
+    mode: '755'

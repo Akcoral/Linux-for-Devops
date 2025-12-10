@@ -1,0 +1,17 @@
+---
+- name: Ensure rsyslog is installed and running
+  package:
+    name: rsyslog
+    state: present
+
+- name: Ensure rsyslog is active
+  systemd:
+    name: rsyslog
+    state: started
+    enabled: yes
+
+- name: Enable imjournal module
+  lineinfile:
+    path: /etc/rsyslog.conf
+    regexp: '^#?module\(load="imjournal"\)'
+    line: 'module(load="imjournal")'

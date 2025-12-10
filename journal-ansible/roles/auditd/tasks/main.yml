@@ -1,0 +1,21 @@
+---
+- name: Ensure auditd is installed
+  package:
+    name: audit
+    state: present
+
+- name: Ensure auditd is active
+  systemd:
+    name: auditd
+    state: started
+    enabled: yes
+
+- name: Add sudoers audit rule
+  copy:
+    dest: /etc/audit/rules.d/sudoers.rules
+    content: |
+      -w /etc/sudoers -p wa -k sudoers-change
+      -w /etc/sudoers.d/ -p wa -k sudoers-change
+
+- name: Load audit rules
+  command: augenrules --load
