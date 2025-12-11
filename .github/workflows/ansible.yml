@@ -27,3 +27,4 @@ jobs:
             -i "${{ secrets.SSH_HOST }}," \
             --user ${{ secrets.SSH_USER }} \
             --ssh-extra-args "-p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no"
+# test
