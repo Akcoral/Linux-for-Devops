@@ -15,6 +15,8 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
+      - name: Test SSH connection
+        run: ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@127.0.0.1 -p ${{ secrets.SSH_PORT }} "echo Connected!"
       - name: Run Ansible playbook
         env:
           ANSIBLE_ROLES_PATH: ansible_new/roles
