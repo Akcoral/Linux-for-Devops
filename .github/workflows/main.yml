@@ -20,7 +20,7 @@ jobs:
           ANSIBLE_ROLES_PATH: ansible_new/roles
         run: |
           ansible-playbook ansible_new/playbooks/main.yml \
-            -i "${{ secrets.SSH_HOST }}," \
+            -i "127.0.0.1," \
             --user ${{ secrets.SSH_USER }} \
-            --ssh-extra-args "-p ${{ secrets.SSH_PORT }}"
+            --ssh-extra-args "-p ${{ secrets.SSH_PORT }}" -o StrictHostKeyChecking=no"
 
