@@ -27,5 +27,5 @@ jobs:
             -i "127.0.0.1," \
             --user ${{ secrets.SSH_USER }} \
             --private-key ~/.ssh/id_ed25519 \
-            --ssh-extra-args "-p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no"
+            --ssh-extra-args "-t -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no"
 
