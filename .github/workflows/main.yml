@@ -12,11 +12,13 @@ jobs:
       - name: Install Ansible
         run: sudo apt-get update && sudo apt-get install -y ansible
       - name: Setup SSH key
+        shell: bash
         run: |
-          mkdir -p $HOME/.ssh
-          echo "${{ secrets.SSH_KEY }}" > $HOME/.ssh/id_ed25519
-          chmod 600 $HOME/.ssh/id_ed25519
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> $HOME/.ssh/known_hosts
+          echo "HOME=$HOME"
+          mkdir -p /home/runner/.ssh
+          echo "${{ secrets.SSH_KEY }}" > /home/runner/.ssh/id_ed25519
+          chmod 600 /home/runner/.ssh/id_ed25519
+          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> /home/runner/.ssh/known_hosts
       - name: Run Ansible playbook
         run: |
           ansible-playbook ansible_new/playbooks/main.yml \
