@@ -15,9 +15,10 @@ jobs:
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_KEY }}
-      - name: Run Ansible playbook
-        run: |
-          ansible-playbook ansible_new/playbooks/main.yml \
-            -i "${{ secrets.SSH_HOST }}," \
-            --user ${{ secrets.SSH_USER }} \
-            --ssh-extra-args "-p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no"
+     - name: Run Ansible playbook
+       run: |
+         ansible-playbook ansible_new/playbooks/main.yml \
+           -i "${{ secrets.SSH_HOST }}," \
+           --user ${{ secrets.SSH_USER }} \
+           --ssh-extra-args "-p ${{ secrets.SSH_PORT }}" \
+           --roles-path ansible_new/roles
